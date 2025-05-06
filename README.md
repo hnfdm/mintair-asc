@@ -28,14 +28,10 @@ Bot otomatis untuk melakukan deploy kontrak **Timer** dan **ERC-20 Token** ke ja
 
 ### 1. Clone Repository
 ```bash
-git clone https://github.com/Duhayu12/Mintair_bot_deploy.git
-cd Mintair_bot_deploy
+git clone https://github.com/hnfdm/mintair-asc.git && cd mintair-asc
 ```
 ```bash
 npm install
-```
-```bash
-npm install ethers@5.7.2
 ```
 ```bash
 nano.env
