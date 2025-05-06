@@ -3,7 +3,8 @@
     {
       "name": "Somnia Shannon Testnet",
       "chainId": 50312,
-      "rpc": "https://dream-rpc.somnia.network"
+      "rpc": "https://dream-rpc.somnia.network",
+      "ticker": "STT"
     }
   ]
 }
