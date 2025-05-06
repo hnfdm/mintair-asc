@@ -3,169 +3,175 @@ const fs = require("fs");
 const axios = require("axios");
 const { ethers } = require("ethers");
 const readline = require("readline");
-const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-const ask = (q) => new Promise((res) => rl.question(q, res));
-const delay = (ms) => new Promise((res) => setTimeout(res, ms));
+
+const banner = `
+        █████╗ ██╗██████╗ ██████╗ ██████╗  ██████╗ ██████╗      █████╗ ███████╗ ██████╗
+        ██╔══██╗██║██╔══██╗██╔══██╗██╔══██╗██╔═══██╗██╔══██╗    ██╔══██╗██╔════╝██╔════╝
+        ███████║██║██████╔╝██║  ██║██████╔╝██║   ██║██████╔╝    ███████║███████╗██║     
+        ██╔══██║██║██╔══██╗██║  ██║██╔══██╗██║   ██║██╔═══╝     ██╔══██║╚════██║██║     
+        ██║  ██║██║██║  ██║██████╔╝██║  ██║╚██████╔╝██║         ██║  ██║███████║╚██████╗
+        ╚═╝  ╚═╝╚═╝╚═╝  ╚═╝╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚═╝         ╚═╝  ╚═╝╚══════╝ ╚═════╝
+            Mintair Auto Deploy - BOT                
+📢  Telegram Channel: https://t.me/airdropasc`;
+
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
+
+const ask = (question) => new Promise((resolve) => rl.question(question, resolve));
+const randomDelay = () =>
+  new Promise((resolve) =>
+    setTimeout(resolve, Math.floor(Math.random() * (30000 - 10000 + 1)) + 10000)
+  );
+
 const rpcConfig = JSON.parse(fs.readFileSync("./rpc_config.json"));
 const privateKeys = Object.values(process.env).filter((k) => k.startsWith("0x"));
+
 if (privateKeys.length === 0) {
-  console.error("Tidak ada private key ditemukan di .env");
+  console.error("No private keys found in .env");
   process.exit(1);
 }
+
 function generateTokenInfo() {
-  const chars = "abcdefghijklmnopqrstuvwxyz";
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   const random = (len) =>
     Array.from({ length: len }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
   const name = "Token " + random(6);
-  const symbol = random(6).toUpperCase();
+  const symbol = random(6);
   return { name, symbol };
 }
+
 async function postToMintair(address, txHash, networkName, type) {
   try {
     await axios.post(
       "https://contracts-api.mintair.xyz/api/v1/user/transaction",
       {
         transactionHash: txHash,
-        metaData: {
-          name: networkName,
-          type
-        }
+        metaData: { name: networkName, type },
       },
-      {
-        headers: {
-          "Wallet-Address": address
-        }
-      }
+      { headers: { "Wallet-Address": address } }
     );
-  } catch {}
-}
-async function deployTimer() {
-  const abi = JSON.parse(fs.readFileSync("./TimerABI.json"));
-  const bytecode = JSON.parse(fs.readFileSync("./TimerBytecode.json")).bytecode;
-  console.log("\n== Jaringan yang Tersedia ==");
-  rpcConfig.networks.forEach((net, i) => console.log(`${i + 1}. ${net.name} (${net.chainId})`));
-  const netIndex = parseInt(await ask("Pilih jaringan (angka): "));
-  const network = rpcConfig.networks[netIndex - 1];
-  const jumlahDeploy = parseInt(await ask("Berapa kali deploy Timer Contract per wallet? "));
-  if (isNaN(jumlahDeploy) || jumlahDeploy < 1) {
-    console.error("Jumlah deploy tidak valid.");
-    return;
-  }
-  for (let w = 0; w < privateKeys.length; w++) {
-    const privateKey = privateKeys[w];
-    const provider = new ethers.providers.JsonRpcProvider(network.rpc);
-    const wallet = new ethers.Wallet(privateKey, provider);
-    const balance = await provider.getBalance(wallet.address);
-    console.log(`\n=== Wallet ${w + 1}: ${wallet.address} ===`);
-    console.log(`Balance: ${ethers.utils.formatEther(balance)} ETH`);
-    const factory = new ethers.ContractFactory(abi, bytecode, wallet);
-    for (let i = 0; i < jumlahDeploy; i++) {
-      console.log(`\n[${i + 1}] Deploying Timer Contract...`);
-      try {
-        const contract = await factory.deploy();
-        await contract.deployed();
-        const txHash = contract.deployTransaction.hash;
-        console.log("✓ Sukses!");
-        console.log(`  Address : ${contract.address}`);
-        console.log(`  Tx Hash : ${txHash}`);
-        await postToMintair(wallet.address, txHash, network.name, "Timer");
-      } catch (err) {
-        console.error("Deploy gagal:", err.message);
-      }
-      if (i < jumlahDeploy - 1) {
-        console.log("⏳    Menunggu 30 detik sebelum deploy berikutnya...");
-        await delay(30000);
-      }
-    }
-    if (w < privateKeys.length - 1) {
-      console.log("⏳    Menunggu 30 detik sebelum lanjut ke wallet berikutnya...");
-      await delay(30000);
-    }
+  } catch (error) {
+    console.error("Failed to post to Mintair:", error.message);
   }
 }
-async function deployERC20() {
-  console.log("\n== Jaringan yang Tersedia ==");
-  rpcConfig.networks.forEach((net, i) => console.log(`${i + 1}. ${net.name} (${net.chainId})`));
-  const netIndex = parseInt(await ask("Pilih jaringan (angka): "));
-  const network = rpcConfig.networks[netIndex - 1];
-  let abi, bytecode;
+
+async function deployTimer(wallet, network, abi, bytecode) {
+  const factory = new ethers.ContractFactory(abi, bytecode, wallet);
+  console.log(`\nDeploying Timer Contract...`);
   try {
+    const contract = await factory.deploy();
+    await contract.deployed();
+    const txHash = contract.deployTransaction.hash;
+    console.log("✓ Success!");
+    console.log(`  Address: ${contract.address}`);
+    console.log(`  Tx Hash: ${txHash}`);
+    await postToMintair(wallet.address, txHash, network.name, "Timer");
+    return true;
+  } catch (error) {
+    console.error("Deployment failed:", error.message);
+    return false;
+  }
+}
+
+async function deployERC20(wallet, network, abi, bytecode) {
+  const { name, symbol } = generateTokenInfo();
+  const factory = new ethers.ContractFactory(abi, bytecode, wallet);
+  console.log(`\nDeploying ${name} (${symbol})...`);
+  try {
+    const contract = await factory.deploy(name, symbol);
+    await contract.deployed();
+    const txHash = contract.deployTransaction.hash;
+    console.log("✓ Success!");
+    console.log(`  Address: ${contract.address}`);
+    console.log(`  Tx Hash: ${txHash}`);
+    await postToMintair(wallet.address, txHash, network.name, "ERC-20");
+    return true;
+  } catch (error) {
+    console.error("Deployment failed:", error.message);
+    return false;
+  }
+}
+
+async function automatedDeployment() {
+  console.log("\n== Available Networks ==");
+  rpcConfig.networks.forEach((net, i) => console.log(`${i + 1}. ${net.name} (${net.chainId})`));
+
+  const netIndex = parseInt(await ask("Select network (number): "));
+  const network = rpcConfig.networks[netIndex - 1];
+  const totalDeployments = parseInt(await ask("How many total contracts to deploy? "));
+
+  if (isNaN(totalDeployments) || totalDeployments < 1) {
+    console.error("Invalid deployment count.");
+    return;
+  }
+
+  // Load ABI and Bytecode
+  let timerAbi, timerBytecode, erc20Abi, erc20Bytecode;
+  try {
+    timerAbi = JSON.parse(fs.readFileSync("./abi/TimerABI.json"));
+    timerBytecode = JSON.parse(fs.readFileSync("./bytecode/TimerBytecode.json"));
     if (network.name.toLowerCase().includes("0g")) {
-      abi = JSON.parse(fs.readFileSync("./ABI0G.json"));
-      bytecode = JSON.parse(fs.readFileSync("./BYTECODE0G.json")).bytecode;
+      erc20Abi = JSON.parse(fs.readFileSync("./abi/ABI0G.json"));
+      erc20Bytecode = JSON.parse(fs.readFileSync("./bytecode/BYTECODE0G.json"));
     } else {
-      abi = JSON.parse(fs.readFileSync("./ERC20ABI.json"));
-      bytecode = JSON.parse(fs.readFileSync("./ERC20Bytecode.json")).bytecode;
+      erc20Abi = JSON.parse(fs.readFileSync("./abi/ERC20ABI.json"));
+      erc20Bytecode = JSON.parse(fs.readFileSync("./bytecode/ERC20Bytecode.json"));
     }
-  } catch (e) {
-    console.error("Gagal membaca file ABI/Bytecode:", e.message);
+  } catch (error) {
+    console.error("Failed to read ABI/Bytecode file:", error.message);
     return;
   }
-  const useAll = (await ask("Gunakan semua wallet? (y/n): ")).toLowerCase() === "y";
-  const jumlahDeploy = parseInt(await ask("Berapa kali deploy ERC20 token? "));
-  if (isNaN(jumlahDeploy) || jumlahDeploy < 1) {
-    console.error("Jumlah deploy tidak valid.");
-    return;
-  }
-  const walletsToUse = useAll
-    ? privateKeys
-    : [privateKeys[parseInt(await ask(`Pilih wallet (1-${privateKeys.length}): `)) - 1]];
-  for (let w = 0; w < walletsToUse.length; w++) {
-    const privateKey = walletsToUse[w];
+
+  let deploymentsDone = 0;
+
+  while (deploymentsDone < totalDeployments) {
+    // Randomly select a wallet
+    const walletIndex = Math.floor(Math.random() * privateKeys.length);
+    const privateKey = privateKeys[walletIndex];
     const provider = new ethers.providers.JsonRpcProvider(network.rpc);
     const wallet = new ethers.Wallet(privateKey, provider);
     const balance = await provider.getBalance(wallet.address);
-    console.log(`\n=== Wallet ${w + 1}: ${wallet.address} ===`);
-    console.log(`Balance: ${ethers.utils.formatEther(balance)} ETH`);
-    const factory = new ethers.ContractFactory(abi, bytecode, wallet);
-    for (let i = 0; i < jumlahDeploy; i++) {
-      const { name, symbol } = generateTokenInfo();
-      console.log(`\n[${i + 1}] Deploying ${name} (${symbol})...`);
-      try {
-        const contract = await factory.deploy(name, symbol);
-        await contract.deployed();
-        const txHash = contract.deployTransaction.hash;
-        console.log("✓ Sukses!");
-        console.log(`  Address : ${contract.address}`);
-        console.log(`  Tx Hash : ${txHash}`);
-        await postToMintair(wallet.address, txHash, network.name, "ERC-20");
-      } catch (err) {
-        console.error("Deploy gagal:", err.message);
-      }
-      if (i < jumlahDeploy - 1) {
-        console.log("⏳    Menunggu 30 detik sebelum deploy berikutnya...");
-        await delay(30000);
-      }
+
+    console.log(`\n=== Wallet ${walletIndex + 1}: ${wallet.address} ===`);
+    console.log(`Balance: ${ethers.utils.formatEther(balance)} ${network.ticker}`);
+
+    // Randomly choose between Timer and ERC20
+    const isTimer = Math.random() < 0.5;
+    const deploySuccess = isTimer
+      ? await deployTimer(wallet, network, timerAbi, timerBytecode)
+      : await deployERC20(wallet, network, erc20Abi, erc20Bytecode);
+
+    if (deploySuccess) {
+      deploymentsDone++;
+      console.log(`Progress: ${deploymentsDone}/${totalDeployments} contracts deployed`);
     }
-    if (w < walletsToUse.length - 1) {
-      console.log("⏳    Menunggu 30 detik sebelum lanjut ke wallet berikutnya...");
-      await delay(30000);
+
+    if (deploymentsDone < totalDeployments) {
+      console.log("⏳ Waiting for a random interval (10-30 seconds)...");
+      await randomDelay();
     }
   }
 }
+
 async function mainMenu() {
-  while (true) {
-    console.log("\n== PILIH JENIS DEPLOY ==");
-    console.log("1. Deploy Timer Contract");
-    console.log("2. Deploy ERC20");
-    const choice = await ask("Masukkan pilihan: ");
-    if (choice === "1") {
-      await deployTimer();
-    } else if (choice === "2") {
-      await deployERC20();
-    } else {
-      console.log("Pilihan tidak valid.");
-      continue;
-    }
-    console.log("\n============================================================");
-    console.log("                SEMUA TRANSAKSI BERHASIL DILAKUKAN");
-    console.log("============================================================");
-    const lanjut = (await ask("\nLanjut transaksi lagi? (y/n): ")).toLowerCase();
-    if (lanjut !== "y") {
-      console.log("\nTerima kasih! Bot dihentikan.");
-      rl.close();
-      process.exit(0);
-    }
+  console.log(banner); // Display the banner at the start
+  console.log("\n== AUTOMATED CONTRACT DEPLOYMENT ==");
+  await automatedDeployment();
+
+  console.log("\n============================================================");
+  console.log("                ALL TRANSACTIONS COMPLETED");
+  console.log("============================================================");
+
+  const continueTx = (await ask("\nContinue with another deployment? (y/n): ")).toLowerCase();
+  if (continueTx !== "y") {
+    console.log("\nThank you! Bot stopped.");
+    rl.close();
+    process.exit(0);
+  } else {
+    await mainMenu();
   }
 }
+
 mainMenu();
