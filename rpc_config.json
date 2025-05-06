@@ -1,19 +1,9 @@
 {
   "networks": [
     {
-      "name": "Seismic Devnet",
-      "chainId": 5124,
-      "rpc": "https://node-2.seismicdev.net/rpc"
-    },
-    {
-      "name": "0g Testnet",
-      "chainId": 16600,
-      "rpc": "https://evmrpc-testnet.0g.ai"
-    },
-    {
-      "name": "MEGAETH Testnet",
-      "chainId": 6342,
-      "rpc": "https://carrot.megaeth.com/rpc"
+      "name": "Somnia Shannon Testnet",
+      "chainId": 50312,
+      "rpc": "https://dream-rpc.somnia.network"
     }
   ]
 }
