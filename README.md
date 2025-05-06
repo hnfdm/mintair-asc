@@ -1,43 +1,34 @@
-# Mintair Bot Deploy
+### Mintair Auto Deploy Bot
 
-Bot otomatis untuk melakukan deploy kontrak **Timer** dan **ERC-20 Token** ke jaringan blockchain melalui Mintair. Mendukung multi-wallet, pelaporan ke API Mintair, serta delay otomatis antar transaksi.
+An automated Node.js bot for deploying **Timer Contracts** and **ERC-20 Tokens** to blockchain networks via the Mintair platform.
 
-## Fitur
-- Pilihan jenis kontrak: **Timer Contract** atau **ERC-20 Token**
-- Dukungan **multi-wallet**
-- Pemilihan jaringan dari `rpc_config.json`
-- Delay otomatis antar deploy (30 detik) dan antar wallet
-- Integrasi API Mintair untuk pelaporan transaksi agar tampil di UI
-- Dukungan khusus untuk jaringan seperti **0g Testnet**
+### Features
+- **Random Contract Deployment**: Deploys either a **Timer Contract** or an **ERC-20 Token** randomly for a specified number of deployments.
+- **Multi-Wallet Support**: Utilizes multiple wallets from the `.env` file, selecting them randomly for each deployment.
+- **Network Selection**: Supports multiple blockchain networks defined in `rpc_config.json`.
+- **Randomized Delay**: Introduces a random delay of 10–30 seconds between deployments to avoid rate-limiting and ensure smooth operation.
+- **Dynamic Ticker**: Displays wallet balances using the network's native ticker (e.g., STT for Somnia Shannon Testnet).
+- **Mintair Integration**: Automatically logs deployed contract transactions to the Mintair API.
 
-## Struktur File
-
-| File                  | Keterangan                                           |
-|-----------------------|------------------------------------------------------|
-| `.env`                | Private key wallet (contoh: `PRIVATE_KEY_1=...`)     |
-| `index.js`            | Script utama bot deploy                              |
-| `rpc_config.json`     | Konfigurasi jaringan RPC dan chain ID                |
-| `TimerABI.json`       | ABI kontrak Timer                                     |
-| `TimerBytecode.json`  | Bytecode kontrak Timer                                |
-| `ERC20ABI.json`       | ABI kontrak ERC-20                                     |
-| `ERC20Bytecode.json`  | Bytecode kontrak ERC-20                                |
-| `ABI0G.json`          | ABI untuk ERC-20 di jaringan 0g Testnet               |
-| `BYTECODE0G.json`     | Bytecode untuk ERC-20 di jaringan 0g Testnet          |
-
-## Instalasi
+### Installation
 
 ### 1. Clone Repository
 ```bash
 git clone https://github.com/hnfdm/mintair-asc.git && cd mintair-asc
 ```
+
+### 2. Install Node Module
 ```bash
 npm install
 ```
+
+### 3. Setup Env (Private Key)
 ```bash
 nano.env
 ```
-PRIVATE_KEY_1=0xabc123...
-PRIVATE_KEY_2=0xdef456...
+
+### 4. Start Bot
+
 ```bash
 node index.js
 ```
