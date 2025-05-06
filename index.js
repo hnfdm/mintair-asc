@@ -111,13 +111,17 @@ async function automatedDeployment() {
   let timerAbi, timerBytecode, erc20Abi, erc20Bytecode;
   try {
     timerAbi = JSON.parse(fs.readFileSync("./abi/TimerABI.json"));
-    timerBytecode = JSON.parse(fs.readFileSync("./bytecode/TimerBytecode.json"));
+    const timerBytecodeData = JSON.parse(fs.readFileSync("./bytecode/TimerBytecode.json"));
+    timerBytecode = typeof timerBytecodeData === "object" && timerBytecodeData.bytecode ? timerBytecodeData.bytecode : timerBytecodeData;
+
     if (network.name.toLowerCase().includes("0g")) {
       erc20Abi = JSON.parse(fs.readFileSync("./abi/ABI0G.json"));
-      erc20Bytecode = JSON.parse(fs.readFileSync("./bytecode/BYTECODE0G.json"));
+      const erc20BytecodeData = JSON.parse(fs.readFileSync("./bytecode/BYTECODE0G.json"));
+      erc20Bytecode = typeof erc20BytecodeData === "object" && erc20BytecodeData.bytecode ? erc20BytecodeData.bytecode : erc20BytecodeData;
     } else {
       erc20Abi = JSON.parse(fs.readFileSync("./abi/ERC20ABI.json"));
-      erc20Bytecode = JSON.parse(fs.readFileSync("./bytecode/ERC20Bytecode.json"));
+      const erc20BytecodeData = JSON.parse(fs.readFileSync("./bytecode/ERC20Bytecode.json"));
+      erc20Bytecode = typeof erc20BytecodeData === "object" && erc20BytecodeData.bytecode ? erc20BytecodeData.bytecode : erc20BytecodeData;
     }
   } catch (error) {
     console.error("Failed to read ABI/Bytecode file:", error.message);
