@@ -5,6 +5,18 @@
       "chainId": 50312,
       "rpc": "https://dream-rpc.somnia.network",
       "ticker": "STT"
+    },
+    {
+      "name": "Monad Testnet",
+      "chainId": 10143,
+      "rpc": "https://testnet-rpc.monad.xyz",
+      "ticker": "MON"
+    },
+    {
+      "name": "MegaETH Testnet",
+      "chainId": 6342,
+      "rpc": "https://carrot.megaeth.com/rpc",
+      "ticker": "mETH"
     }
   ]
 }
